@@ -1,0 +1,138 @@
+<Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="navigatingTo" class="bg-gray-900">
+    <ActionBar title="RekordBoy" class="bg-gray-800 text-white">
+        <ActionBar.actionItems>
+            <ActionItem text="Select USB"
+                       ios.position="right"
+                       visibility="{{ playlists.length === 0 ? 'visible' : 'collapse' }}"
+                       tap="{{ onPickFolder }}" />
+            <ActionItem text="Back"
+                       ios.position="left"
+                       visibility="{{ tracks.length > 0 ? 'visible' : 'collapse' }}"
+                       tap="{{ onBackToPlaylists }}" />
+        </ActionBar.actionItems>
+    </ActionBar>
+
+    <GridLayout rows="auto, *, auto" class="p-4">
+        <!-- Hero Section -->
+        <StackLayout visibility="{{ playlists.length === 0 ? 'visible' : 'collapse' }}" 
+                     class="flex-1 justify-center items-center text-center" 
+                     row="0">
+            <Image src="~/images/hero-icon.png" class="w-24 h-24 mb-4" />
+            <Label text="No USB or Playlist Loaded" 
+                   class="text-xl font-bold text-white mb-2" />
+            <Label text="Please connect a USB or select a playlist to get started." 
+                   class="text-base text-gray-400" />
+        </StackLayout>
+
+        <!-- Loading Progress Bar -->
+        <Progress value="{{ loadingProgress }}" 
+                 maxValue="100" 
+                 visibility="{{ isLoading ? 'visible' : 'collapse' }}" 
+                 class="h-1 bg-gray-700 rounded-full"
+                 row="0" />
+
+        <!-- Current Playlist Label -->
+        <Label text="{{ selectedPlaylist ? selectedPlaylist.name : '' }}" 
+               class="text-lg font-bold mb-4 text-white" 
+               visibility="{{ playlists.length > 0 ? 'visible' : 'collapse' }}" 
+               row="0" />
+        
+        <!-- Playlists List -->
+        <ListView items="{{ playlists }}" 
+                  itemTap="{{ onPlaylistTap }}" 
+                  visibility="{{ tracks.length === 0 && !isLoading ? 'visible' : 'collapse' }}" 
+                  class="bg-transparent"
+                  row="1"
+                  iosEstimatedRowHeight="60"
+                  itemIdGenerator="{{ index }}"
+                  iosItemTemplateSelector="return 'playlist'">
+            <ListView.itemTemplate>
+                <GridLayout class="p-4 border-b border-gray-700" height="60">
+                    <Label text="{{ name }}" 
+                           class="text-lg text-white" 
+                           textWrap="true" />
+                </GridLayout>
+            </ListView.itemTemplate>
+        </ListView>
+
+        <!-- Tracks List -->
+        <ListView items="{{ tracks }}" 
+                  itemTap="{{ onTrackTap }}"
+                  visibility="{{ tracks.length > 0 && !isLoading ? 'visible' : 'collapse' }}" 
+                  class="bg-transparent"
+                  row="1"
+                  iosEstimatedRowHeight="80"
+                  itemIdGenerator="{{ index }}"
+                  iosItemTemplateSelector="return 'track'">
+            <ListView.itemTemplate>
+                <GridLayout rows="auto, auto" columns="*, auto" class="p-4 border-b border-gray-700" height="80">
+                    <Label text="{{ title }}" 
+                           class="text-lg font-medium text-white" 
+                           row="0" col="0" 
+                           textWrap="true" />
+                    
+                    <GridLayout columns="auto, auto" row="1" col="0" colSpan="2" class="mt-2">
+                        <Label text="{{ 'BPM: ' + tempo }}" 
+                               class="text-sm text-gray-400 mr-4" 
+                               col="0" />
+                        <Label text="{{ 'Rating: ' + rating }}" 
+                               class="text-sm text-gray-400" 
+                               col="1" />
+                    </GridLayout>
+                </GridLayout>
+            </ListView.itemTemplate>
+        </ListView>
+
+        <!-- Loading State -->
+        <StackLayout visibility="{{ isLoading ? 'visible' : 'collapse' }}" 
+                    class="flex-1 justify-center items-center"
+                    row="1">
+            <ActivityIndicator busy="true" 
+                             class="w-12 h-12 mb-4" 
+                             color="#ffffff" />
+            <Label text="{{ loadingMessage }}" 
+                   class="text-base text-gray-400" />
+        </StackLayout>
+
+        <!-- Enhanced Player controls -->
+        <GridLayout rows="auto, auto, auto" class="bg-gray-800 p-4 rounded-lg" row="2" 
+                   visibility="{{ currentTrack ? 'visible' : 'collapse' }}">
+            <!-- Track Info -->
+            <StackLayout orientation="vertical" row="0" class="mb-3">
+                <Label text="{{ currentTrack.title }}" 
+                       class="text-lg font-medium text-white" 
+                       textWrap="true" />
+                <Label text="{{ 'BPM: ' + currentTrack.tempo }}"
+                       class="text-sm text-gray-400 mt-1" />
+            </StackLayout>
+
+            <!-- Timeline -->
+            <GridLayout rows="auto" columns="auto, *, auto" row="1" class="mb-3">
+                <Label text="{{ currentTime }}" class="text-xs text-gray-400" col="0" />
+                <Slider value="{{ currentTimeValue }}" 
+                        minValue="0" 
+                        maxValue="{{ duration }}" 
+                        col="1"
+                        class="m-x-2"
+                        valueChange="{{ onTimelineValueChanged }}" />
+                <Label text="{{ formatTime(duration) }}" class="text-xs text-gray-400" col="2" />
+            </GridLayout>
+
+            <!-- Playback Controls -->
+            <GridLayout columns="*, auto, auto, auto, *" row="2">
+                <Button text="⏮" 
+                        tap="{{ onPreviousTrack }}" 
+                        class="-primary w-12 h-12"
+                        col="1" />
+                <Button text="{{ isPlaying ? '⏸' : '▶' }}" 
+                        tap="{{ onPlayPause }}" 
+                        class="-primary w-12 h-12 mx-2"
+                        col="2" />
+                <Button text="⏭" 
+                        tap="{{ onNextTrack }}" 
+                        class="-primary w-12 h-12"
+                        col="3" />
+            </GridLayout>
+        </GridLayout>
+    </GridLayout>
+</Page>

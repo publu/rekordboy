@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+Page {
+    background-color: #111827; /* gray-900 */
+}
+
+ActionBar {
+    background-color: #1F2937; /* gray-800 */
+    color: white;
+}
+
+.ns-dark ActionBar {
+    background-color: #1F2937;
+    color: white;
+}
+
+ListView {
+    separator-color: transparent;
+    background-color: transparent;
+}
+
+Button.-primary {
+    background-color: #3B82F6; /* blue-500 */
+    color: white;
+    font-weight: bold;
+    border-radius: 8;
+}
+
+Button.-primary:highlighted {
+    background-color: #2563EB; /* blue-600 */
+}
