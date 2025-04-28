@@ -217,9 +217,9 @@ export class HelloWorldModel extends Observable {
                         throw new Error('Invalid tracks data received');
                     }
                     console.log('[ViewModel] Successfully loaded tracks:', tracks.length);
-                    this._tracks = tracks;
+                    this._tracks = tracks.sort((a, b) => b.id - a.id);
                     // Cache the tracks
-                    this._playlistCache.set(playlist.id, tracks);
+                    this._playlistCache.set(playlist.id, this._tracks);
                     this.notifyPropertyChange('tracks', this._tracks);
                     this.setLoadingState(false);
                 })
