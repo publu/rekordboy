@@ -1,4 +1,4 @@
-<Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo" class="page">
+<Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo" class="page" frameId="main-frame">
     <Page.actionBar>
         <ActionBar title="RekordBoy" class="action-bar">
             <ActionBar.actionItems>

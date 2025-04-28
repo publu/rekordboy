@@ -1,4 +1,4 @@
-import { EventData, Observable, Page } from '@nativescript/core';
+import { EventData, Observable, Page, Frame } from '@nativescript/core';
 import { HelloWorldModel } from './main-view-model';
 import { prompt } from '@nativescript/core/ui/dialogs';
 import { SegmentedBar } from '@nativescript/core/ui/segmented-bar';
@@ -13,6 +13,10 @@ export function onNavigatingTo(args: EventData) {
 
 export function onPlaylistTap(args: EventData) {
     model.onPlaylistTap(args);
+    const frame = Frame.getFrameById('main-frame');
+    if (frame) {
+        frame.navigate('app/track-page');
+    }
 }
 
 export function onAddPlaylist() {
