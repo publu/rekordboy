@@ -1,4 +1,4 @@
-import { EventData, Observable, Page, Frame } from '@nativescript/core';
+import { EventData, Observable, Page } from '@nativescript/core';
 import { HelloWorldModel } from './main-view-model';
 import { action } from '@nativescript/core/ui/dialogs';
 
@@ -27,10 +27,6 @@ export function onNextTrack() {
 
 export function onBackToPlaylists() {
     model.onBackToPlaylists();
-    const frame = Frame.getFrameById('main-frame');
-    if (frame) {
-        frame.navigate('app/home-page');
-    }
 }
 
 export function onAddToPlaylist() {

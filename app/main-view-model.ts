@@ -247,12 +247,6 @@ export class HelloWorldModel extends Observable {
                 console.error('[ViewModel] Invalid playlist index:', args.index);
                 return;
             }
-
-            if (!playlist.name) {
-                console.error('[ViewModel] Playlist name is invalid');
-                return;
-            }
-
             console.log('[ViewModel] Selected playlist:', playlist.name);
 
             // Clear previous state
@@ -275,11 +269,6 @@ export class HelloWorldModel extends Observable {
             if (this._viewMode === 'rekordbox') {
                 // Handle rekordbox playlist
                 const rekordboxPlaylist = playlist as Playlist;
-                if (!rekordboxPlaylist.id) {
-                    console.error('[ViewModel] Rekordbox playlist ID is invalid');
-                    return;
-                }
-
                 const cachedTracks = this._playlistCache.get(rekordboxPlaylist.id);
                 if (cachedTracks) {
                     console.log('[ViewModel] Using cached tracks for playlist:', playlist.name);
@@ -326,10 +315,6 @@ export class HelloWorldModel extends Observable {
             } else {
                 // Handle local playlist
                 const localPlaylist = playlist as LocalPlaylist;
-                if (!localPlaylist.tracks) {
-                    console.error('[ViewModel] Local playlist tracks are invalid');
-                    return;
-                }
                 this._tracks = localPlaylist.tracks;
                 this.notifyPropertyChange('tracks', this._tracks);
             }
