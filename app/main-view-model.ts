@@ -2,6 +2,7 @@ import { Observable, File, knownFolders, path } from '@nativescript/core';
 import { FilePicker } from './file-picker';
 import { PdbParser, Playlist, Track } from './pdb-parser';
 import { AVPlayerWrapper } from './av-player';
+import { LocalPlaylistManager, LocalPlaylist } from './local-playlist-manager';
 
 declare var NSURL: any, NSFileManager: any, NSData: any, interop: any;
 
@@ -9,8 +10,9 @@ export class HelloWorldModel extends Observable {
     private filePicker: FilePicker;
     private parser: PdbParser;
     private _playlists: Playlist[] = [];
+    private _localPlaylists: LocalPlaylist[] = [];
     private _tracks: Track[] = [];
-    private _selectedPlaylist: Playlist | null = null;
+    private _selectedPlaylist: Playlist | LocalPlaylist | null = null;
     private _currentTrack: Track | null = null;
     private _isPlaying: boolean = false;
     private _currentTimeValue: number = 0;
@@ -23,6 +25,8 @@ export class HelloWorldModel extends Observable {
     private _isLoading: boolean = false;
     private _loadingMessage: string = 'Loading...';
     private _playlistCache: Map<number, Track[]> = new Map();
+    private _viewMode: 'rekordbox' | 'local' = 'rekordbox';
+    private localPlaylistManager: LocalPlaylistManager;
 
     constructor() {
         super();
@@ -30,6 +34,8 @@ export class HelloWorldModel extends Observable {
         this.filePicker = new FilePicker();
         this.parser = PdbParser.getInstance();
         this.player = new AVPlayerWrapper();
+        this.localPlaylistManager = LocalPlaylistManager.getInstance();
+        this._localPlaylists = this.localPlaylistManager.getPlaylists();
 
         // Handle playback completion
         this.player.on('completed', () => {
@@ -138,7 +144,7 @@ export class HelloWorldModel extends Observable {
     get tracks(): Track[] {
         return this._tracks;
     }
-    get selectedPlaylist(): Playlist | null {
+    get selectedPlaylist(): Playlist | LocalPlaylist | null {
         return this._selectedPlaylist;
     }
     get currentTrack(): Track | null {
@@ -173,16 +179,70 @@ export class HelloWorldModel extends Observable {
     get loadingMessage(): string {
         return this._loadingMessage;
     }
+    get viewMode(): 'rekordbox' | 'local' {
+        return this._viewMode;
+    }
+
+    set viewMode(value: 'rekordbox' | 'local') {
+        if (this._viewMode !== value) {
+            this._viewMode = value;
+            this.notifyPropertyChange('viewMode', this._viewMode);
+            this._selectedPlaylist = null;
+            this._tracks = [];
+            this.notifyPropertyChange('selectedPlaylist', this._selectedPlaylist);
+            this.notifyPropertyChange('tracks', this._tracks);
+        }
+    }
+
+    get localPlaylists(): LocalPlaylist[] {
+        return this._localPlaylists;
+    }
+
+    public createLocalPlaylist(name: string): void {
+        const playlist = this.localPlaylistManager.createPlaylist(name);
+        this._localPlaylists = this.localPlaylistManager.getPlaylists();
+        this.notifyPropertyChange('localPlaylists', this._localPlaylists);
+    }
+
+    public addToLocalPlaylist(playlistId: string, track: Track): void {
+        if (this.localPlaylistManager.addTrackToPlaylist(playlistId, track)) {
+            this._localPlaylists = this.localPlaylistManager.getPlaylists();
+            this.notifyPropertyChange('localPlaylists', this._localPlaylists);
+        }
+    }
+
+    public removeFromLocalPlaylist(playlistId: string, trackId: number): void {
+        if (this.localPlaylistManager.removeTrackFromPlaylist(playlistId, trackId)) {
+            this._localPlaylists = this.localPlaylistManager.getPlaylists();
+            this.notifyPropertyChange('localPlaylists', this._localPlaylists);
+        }
+    }
+
+    public deleteLocalPlaylist(playlistId: string): void {
+        if (this.localPlaylistManager.deletePlaylist(playlistId)) {
+            this._localPlaylists = this.localPlaylistManager.getPlaylists();
+            this.notifyPropertyChange('localPlaylists', this._localPlaylists);
+        }
+    }
+
+    public renameLocalPlaylist(playlistId: string, newName: string): void {
+        if (this.localPlaylistManager.renamePlaylist(playlistId, newName)) {
+            this._localPlaylists = this.localPlaylistManager.getPlaylists();
+            this.notifyPropertyChange('localPlaylists', this._localPlaylists);
+        }
+    }
 
     onPlaylistTap(args: any) {
         try {
             console.log('[ViewModel] Playlist tap event:', args.index);
-            if (!this._playlists || !Array.isArray(this._playlists)) {
+            const playlists = this._viewMode === 'rekordbox' ? this._playlists : this._localPlaylists;
+            
+            if (!playlists || !Array.isArray(playlists)) {
                 console.error('[ViewModel] Playlists array is invalid');
                 return;
             }
 
-            const playlist = this._playlists[args.index];
+            const playlist = playlists[args.index];
             if (!playlist) {
                 console.error('[ViewModel] Invalid playlist index:', args.index);
                 return;
@@ -192,44 +252,76 @@ export class HelloWorldModel extends Observable {
             // Clear previous state
             this._selectedPlaylist = null;
             this._tracks = [];
+            this._currentTrack = null;
+            this.currentTrackIndex = -1;
+            this._isPlaying = false;
+            
+            // Notify all state changes
             this.notifyPropertyChange('selectedPlaylist', this._selectedPlaylist);
             this.notifyPropertyChange('tracks', this._tracks);
+            this.notifyPropertyChange('currentTrack', this._currentTrack);
+            this.notifyPropertyChange('isPlaying', this._isPlaying);
 
             // Set new playlist
             this._selectedPlaylist = playlist;
             this.notifyPropertyChange('selectedPlaylist', this._selectedPlaylist);
 
-            // Check cache first
-            const cachedTracks = this._playlistCache.get(playlist.id);
-            if (cachedTracks) {
-                console.log('[ViewModel] Using cached tracks for playlist:', playlist.name);
-                this._tracks = cachedTracks;
-                this.notifyPropertyChange('tracks', this._tracks);
-                return;
-            }
-
-            this.setLoadingState(true, `Loading ${playlist.name}...`);
-            
-            console.log('[ViewModel] Starting to load tracks for playlist:', playlist.name);
-            this.parser.getTracksForPlaylist(playlist.id)
-                .then(tracks => {
-                    if (!tracks || !Array.isArray(tracks)) {
-                        throw new Error('Invalid tracks data received');
-                    }
-                    console.log('[ViewModel] Successfully loaded tracks:', tracks.length);
-                    this._tracks = tracks;
-                    // Cache the tracks
-                    this._playlistCache.set(playlist.id, tracks);
+            if (this._viewMode === 'rekordbox') {
+                // Handle rekordbox playlist
+                const rekordboxPlaylist = playlist as Playlist;
+                const cachedTracks = this._playlistCache.get(rekordboxPlaylist.id);
+                if (cachedTracks) {
+                    console.log('[ViewModel] Using cached tracks for playlist:', playlist.name);
+                    this._tracks = cachedTracks;
                     this.notifyPropertyChange('tracks', this._tracks);
-                    this.setLoadingState(false);
-                })
-                .catch(error => {
-                    console.error('[ViewModel] Error loading tracks:', error);
-                    this.setLoadingState(false);
-                    alert('Error loading tracks. Please try again.');
-                });
+                    return;
+                }
+
+                this.setLoadingState(true, `Loading ${playlist.name}...`);
+                
+                console.log('[ViewModel] Starting to load tracks for playlist:', playlist.name);
+                this.parser.getTracksForPlaylist(rekordboxPlaylist.id)
+                    .then(tracks => {
+                        if (!tracks || !Array.isArray(tracks)) {
+                            throw new Error('Invalid tracks data received');
+                        }
+                        console.log('[ViewModel] Successfully loaded tracks:', tracks.length);
+                        
+                        // Update playlist track count
+                        rekordboxPlaylist.trackCount = tracks.length;
+                        this.notifyPropertyChange('playlists', this._playlists);
+                        
+                        // If no tracks, clear selected playlist and return to playlist view
+                        if (tracks.length === 0) {
+                            this._selectedPlaylist = null;
+                            this.notifyPropertyChange('selectedPlaylist', this._selectedPlaylist);
+                            this.setLoadingState(false);
+                            return;
+                        }
+                        
+                        this._tracks = tracks;
+                        // Cache the tracks
+                        this._playlistCache.set(rekordboxPlaylist.id, tracks);
+                        this.notifyPropertyChange('tracks', this._tracks);
+                        this.setLoadingState(false);
+                    })
+                    .catch(error => {
+                        console.error('[ViewModel] Error loading tracks:', error);
+                        this._selectedPlaylist = null;
+                        this.notifyPropertyChange('selectedPlaylist', this._selectedPlaylist);
+                        this.setLoadingState(false);
+                        alert('Error loading tracks. Please try again.');
+                    });
+            } else {
+                // Handle local playlist
+                const localPlaylist = playlist as LocalPlaylist;
+                this._tracks = localPlaylist.tracks;
+                this.notifyPropertyChange('tracks', this._tracks);
+            }
         } catch (error) {
             console.error('[ViewModel] Error in onPlaylistTap:', error);
+            this._selectedPlaylist = null;
+            this.notifyPropertyChange('selectedPlaylist', this._selectedPlaylist);
             this.setLoadingState(false);
         }
     }
@@ -245,6 +337,7 @@ export class HelloWorldModel extends Observable {
             this._currentTrack = null;
             this.currentTrackIndex = -1;
             this._isPlaying = false;
+            this._playlistCache.clear();
             
             // Notify all state changes
             this.notifyPropertyChange('playlists', this._playlists);
@@ -256,17 +349,22 @@ export class HelloWorldModel extends Observable {
             // Load playlists
             const playlists = await this.parser.parsePdbFile(fileContent);
             
+            // Clean up playlist array - only keep playlists with valid IDs and names
+            const cleanedPlaylists = playlists.filter(playlist => 
+                playlist && 
+                typeof playlist.id === 'number' && 
+                typeof playlist.name === 'string' && 
+                playlist.name.trim() !== ''
+            );
+            
             // Initialize playlists with default track count
-            for (const playlist of playlists) {
+            for (const playlist of cleanedPlaylists) {
                 playlist.trackCount = 0;
             }
             
             // Update playlists and notify
-            this._playlists = playlists;
+            this._playlists = cleanedPlaylists;
             this.notifyPropertyChange('playlists', this._playlists);
-            
-            // Clear cache to ensure fresh data
-            this._playlistCache.clear();
             
             this.setLoadingState(false);
         } catch (error) {
