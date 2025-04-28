@@ -37,61 +37,59 @@
                visibility="{{ playlists.length > 0 ? 'visible' : 'collapse' }}" 
                row="0" />
         
-        <!-- Playlists List -->
-        <ListView items="{{ playlists }}" 
-                  itemTap="{{ onPlaylistTap }}" 
-                  visibility="{{ tracks.length === 0 && !isLoading ? 'visible' : 'collapse' }}" 
-                  class="bg-transparent"
-                  row="1"
-                  iosEstimatedRowHeight="60"
-                  itemIdGenerator="{{ index }}"
-                  iosItemTemplateSelector="return 'playlist'">
-            <ListView.itemTemplate>
-                <GridLayout class="p-4 border-b border-gray-700" height="60">
-                    <Label text="{{ name }}" 
-                           class="text-lg text-white" 
-                           textWrap="true" />
-                </GridLayout>
-            </ListView.itemTemplate>
-        </ListView>
-
-        <!-- Tracks List -->
-        <ListView items="{{ tracks }}" 
-                  itemTap="{{ onTrackTap }}"
-                  visibility="{{ tracks.length > 0 && !isLoading ? 'visible' : 'collapse' }}" 
-                  class="bg-transparent"
-                  row="1"
-                  iosEstimatedRowHeight="80"
-                  itemIdGenerator="{{ index }}"
-                  iosItemTemplateSelector="return 'track'">
-            <ListView.itemTemplate>
-                <GridLayout rows="auto, auto" columns="*, auto" class="p-4 border-b border-gray-700" height="80">
-                    <Label text="{{ title }}" 
-                           class="text-lg font-medium text-white" 
-                           row="0" col="0" 
-                           textWrap="true" />
-                    
-                    <GridLayout columns="auto, auto" row="1" col="0" colSpan="2" class="mt-2">
-                        <Label text="{{ 'BPM: ' + tempo }}" 
-                               class="text-sm text-gray-400 mr-4" 
-                               col="0" />
-                        <Label text="{{ 'Rating: ' + rating }}" 
-                               class="text-sm text-gray-400" 
-                               col="1" />
+        <!-- Content Area -->
+        <StackLayout row="1" class="bg-transparent">
+            <!-- Playlists List -->
+            <ListView items="{{ playlists }}" 
+                      itemTap="{{ onPlaylistTap }}" 
+                      visibility="{{ tracks.length === 0 && !isLoading ? 'visible' : 'collapse' }}" 
+                      class="bg-transparent"
+                      height="100%"
+                      iosEstimatedRowHeight="80">
+                <ListView.itemTemplate>
+                    <GridLayout class="p-4 border-b border-gray-700" height="80">
+                        <Label text="{{ name }}" 
+                               class="text-lg font-medium text-white" 
+                               textWrap="true" />
+                        <Label text="{{ 'Tracks: ' + trackCount }}" 
+                               class="text-sm text-gray-400 mt-2" />
                     </GridLayout>
-                </GridLayout>
-            </ListView.itemTemplate>
-        </ListView>
+                </ListView.itemTemplate>
+            </ListView>
 
-        <!-- Loading State -->
-        <StackLayout visibility="{{ isLoading ? 'visible' : 'collapse' }}" 
-                    class="flex-1 justify-center items-center"
-                    row="1">
-            <ActivityIndicator busy="true" 
-                             class="w-12 h-12 mb-4" 
-                             color="#ffffff" />
-            <Label text="{{ loadingMessage }}" 
-                   class="text-base text-gray-400" />
+            <!-- Tracks List -->
+            <ListView items="{{ tracks }}" 
+                      itemTap="{{ onTrackTap }}"
+                      visibility="{{ tracks.length > 0 && !isLoading ? 'visible' : 'collapse' }}" 
+                      class="bg-transparent"
+                      height="100%"
+                      iosEstimatedRowHeight="80">
+                <ListView.itemTemplate>
+                    <GridLayout class="p-4 border-b border-gray-700" height="80">
+                        <Label text="{{ title }}" 
+                               class="text-lg font-medium text-white" 
+                               textWrap="true" />
+                        <GridLayout columns="auto, auto" class="mt-2">
+                            <Label text="{{ 'BPM: ' + tempo }}" 
+                                   class="text-sm text-gray-400 mr-4" 
+                                   col="0" />
+                            <Label text="{{ 'Rating: ' + rating }}" 
+                                   class="text-sm text-gray-400" 
+                                   col="1" />
+                        </GridLayout>
+                    </GridLayout>
+                </ListView.itemTemplate>
+            </ListView>
+
+            <!-- Loading State -->
+            <StackLayout visibility="{{ isLoading ? 'visible' : 'collapse' }}" 
+                        class="flex-1 justify-center items-center">
+                <ActivityIndicator busy="true" 
+                                 class="w-12 h-12 mb-4" 
+                                 color="#ffffff" />
+                <Label text="{{ loadingMessage }}" 
+                       class="text-base text-gray-400" />
+            </StackLayout>
         </StackLayout>
 
         <!-- Enhanced Player controls -->

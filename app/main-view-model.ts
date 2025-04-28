@@ -234,6 +234,48 @@ export class HelloWorldModel extends Observable {
         }
     }
 
+    private async loadPlaylists(fileContent: Uint8Array) {
+        try {
+            this.setLoadingState(true, 'Loading playlists...');
+            
+            // Clear existing state first
+            this._playlists = [];
+            this._tracks = [];
+            this._selectedPlaylist = null;
+            this._currentTrack = null;
+            this.currentTrackIndex = -1;
+            this._isPlaying = false;
+            
+            // Notify all state changes
+            this.notifyPropertyChange('playlists', this._playlists);
+            this.notifyPropertyChange('tracks', this._tracks);
+            this.notifyPropertyChange('selectedPlaylist', this._selectedPlaylist);
+            this.notifyPropertyChange('currentTrack', this._currentTrack);
+            this.notifyPropertyChange('isPlaying', this._isPlaying);
+            
+            // Load playlists
+            const playlists = await this.parser.parsePdbFile(fileContent);
+            
+            // Initialize playlists with default track count
+            for (const playlist of playlists) {
+                playlist.trackCount = 0;
+            }
+            
+            // Update playlists and notify
+            this._playlists = playlists;
+            this.notifyPropertyChange('playlists', this._playlists);
+            
+            // Clear cache to ensure fresh data
+            this._playlistCache.clear();
+            
+            this.setLoadingState(false);
+        } catch (error) {
+            console.error('[ViewModel] Error loading playlists:', error);
+            this.setLoadingState(false);
+            alert('Error loading playlists. Please try again.');
+        }
+    }
+
     public async onTrackTap(args: any) {
         console.log('[ViewModel] Track tap event:', args.index);
         this.currentTrackIndex = args.index;
@@ -292,10 +334,15 @@ export class HelloWorldModel extends Observable {
             this._isPlaying = false;
             
             // Notify changes
+            var n=1;
             this.notifyPropertyChange('tracks', this._tracks);
+            console.log(n++)
             this.notifyPropertyChange('selectedPlaylist', this._selectedPlaylist);
+            console.log(n++)
             this.notifyPropertyChange('currentTrack', this._currentTrack);
+            console.log(n++)
             this.notifyPropertyChange('isPlaying', this._isPlaying);
+            console.log(n++)
             
             // Clear cache if it gets too large
             if (this._playlistCache.size > 10) {

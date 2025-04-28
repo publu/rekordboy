@@ -17,6 +17,7 @@ export interface Track {
 export interface Playlist {
     id: number;
     name: string;
+    trackCount: number;
 }
 
 export class PdbParser {
@@ -38,7 +39,7 @@ export class PdbParser {
 
     public setRootPath(path: string) {
         console.log('[PdbParser] Setting root path:', path);
-        this.rootPath = path.replace('/PIONEER/rekordbox/export.pdb', '');
+        this.rootPath = path.replace('/PIONEER/rekordbox/exportLibrary.pdb', '');
     }
 
     private decodeText(text: any): string {
@@ -80,7 +81,8 @@ export class PdbParser {
                     const name = this.decodeText(row.name);
                     playlists.push({
                         id: row.id,
-                        name: name
+                        name: name,
+                        trackCount: 0
                     });
                     console.log(`[PdbParser] Found playlist: ${name} (ID: ${row.id})`);
                 }
